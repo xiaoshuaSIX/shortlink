@@ -1,0 +1,131 @@
+services:
+  redis:
+    image: redis:7.2.6
+    container_name: shortlink-redis
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis/conf:/etc/redis/redis.conf
+      - ./redis/data:/data
+    command: redis-server /etc/redis/redis.conf --appendonly yes
+    networks:
+      - shortlink_net
+
+  mysql:
+    image: liupeng0518/mysql:5.7-arm64
+    platform: linux/arm64
+    container_name: shortlink-mysql
+    ports:
+      - "3306:3306"
+    volumes:
+      #mysql数据库挂载到host物理机目录/e/docker/mysql/data/db
+      - "./mysql/data:/var/lib/mysql"
+      #容器的配置目录挂载到host物理机目录/e/docker/mysql/data/conf
+      - "./mysql/conf:/etc/mysql/conf.d"
+      - "./mysql/root:/root"
+      - "./mysql/init:/docker-entrypoint-initdb.d"
+    networks:
+      - shortlink_net
+    environment:
+      MYSQL_ROOT_PASSWORD: 'abc123'
+
+  rmqnamesrv:
+    image: apache/rocketmq:5.3.1
+    container_name: shortlink-rmqnamesrv
+    environment:
+      JAVA_OPT_EXT: -server -Xms256m -Xmx256m 
+    ports:
+      - "9876:9876"
+    networks:
+      - shortlink_net
+    command: sh mqnamesrv
+    
+
+  rmqbroker:
+    image: apache/rocketmq:5.3.1
+    container_name: shortlink-rmqbroker
+    ports:
+      # Dashboard pass through
+      - "8082:8082"
+      - "8080:8080"
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    environment:
+      NAMESRV_ADDR: rmqnamesrv:9876
+      JAVA_OPT_EXT: -server -Xms512m -Xmx512m -Xmn256m
+      BROKER_CONF: |
+        brokerClusterName = MinimalCluster
+        brokerName = broker-a
+        brokerId = 0
+        deleteWhen = 04
+        fileReservedTime = 48
+        brokerRole = ASYNC_MASTER
+        flushDiskType = ASYNC_FLUSH
+        timerMaxDelaySec = 31622400
+        brokerIP1=localhost
+    volumes:
+      # 注：./rocketmq/broker/store 需要提前创建出来 并且赋予权限 chmod -R 777 ./rocketmq
+      - ./rocketmq/broker/store:/home/rocketmq/store
+    depends_on:
+      - rmqnamesrv
+    networks:
+      - shortlink_net
+    command: |
+      bash -c '
+      mkdir -p /home/rocketmq/conf && 
+      echo "$$BROKER_CONF" > /home/rocketmq/conf/broker.conf && 
+      ./mqbroker -c /home/rocketmq/conf/broker.conf
+      '
+
+  rmqdashboard:
+    image: apacherocketmq/rocketmq-dashboard:2.1.0
+    container_name: shortlink-rmqdashboard
+    network_mode: "service:rmqbroker"
+    environment:
+      JAVA_OPTS: -Drocketmq.namesrv.addr=rmqnamesrv:9876
+
+  nacos:
+    image: qingpan/rnacos:v0.6.12
+    container_name: shortlink-nacos
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "10848:10848"
+    volumes:
+      - ./nacos/data:/io:rw
+    environment:
+      - RNACOS_INIT_ADMIN_USERNAME=nacos
+      - RNACOS_INIT_ADMIN_PASSWORD=nacos
+      - RNACOS_HTTP_PORT=8848
+    networks:
+      - shortlink_net
+
+  xxl-job:
+    image: xlight/xxl-job-admin-arm:latest
+    hostname: admin
+    container_name: shortlink-xxl_job
+    ports:
+      - 28888:8080
+    links:
+      - mysql
+    volumes:
+      - "./xxl-job/tmp:/data/applogs"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/xxl_job?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&allowMultiQueries=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=abc123
+    depends_on:
+      - mysql
+    networks:
+      - shortlink_net
+
+networks:
+  shortlink_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.21.0.0/16
+      

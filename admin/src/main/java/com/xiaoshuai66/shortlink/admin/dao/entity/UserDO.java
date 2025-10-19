@@ -3,6 +3,7 @@ package com.xiaoshuai66.shortlink.admin.dao.entity;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.xiaoshuai66.shortlink.admin.common.database.BaseDO;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("t_user")
-public class UserDO {
+public class UserDO extends BaseDO {
 
     /**
     * ID
@@ -51,21 +52,4 @@ public class UserDO {
     */
     private Long deletionTime;
 
-    /**
-    * 创建时间
-    */
-    @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createTime;
-
-    /**
-    * 修改时间
-    */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updateTime;
-
-    /**
-    * 删除标识 0：未删除 1：已删除
-    */
-    @TableField(fill = FieldFill.INSERT)
-    private Integer delFlag;
 }

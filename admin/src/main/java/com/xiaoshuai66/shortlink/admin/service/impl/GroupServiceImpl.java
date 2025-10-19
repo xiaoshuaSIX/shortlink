@@ -2,8 +2,8 @@ package com.xiaoshuai66.shortlink.admin.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.xiaoshuai66.shortlink.admin.common.biz.user.UserContext;
 import com.xiaoshuai66.shortlink.admin.dao.entity.GroupDO;
 import com.xiaoshuai66.shortlink.admin.dao.mapper.GroupMapper;
 import com.xiaoshuai66.shortlink.admin.service.GroupService;
@@ -32,6 +32,7 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupDO> implemen
                 .gid(gid)
                 .name(groupName)
                 .sortOrder(0)
+                .username(UserContext.getUsername())
                 .build();
         baseMapper.insert(groupDO);
     }
@@ -39,8 +40,7 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupDO> implemen
     private boolean hasGid(String gid) {
         LambdaQueryWrapper<GroupDO> queryWrapper = Wrappers.lambdaQuery(GroupDO.class)
                 .eq(GroupDO::getGid, gid)
-                // TODO 设置用户名
-                ;
+                .eq(GroupDO::getUsername, UserContext.getUsername());
         GroupDO hasGroupFlag = baseMapper.selectOne(queryWrapper);
         return hasGroupFlag == null;
     }

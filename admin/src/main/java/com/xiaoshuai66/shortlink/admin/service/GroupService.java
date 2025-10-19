@@ -10,4 +10,11 @@ import com.xiaoshuai66.shortlink.admin.dao.entity.GroupDO;
  * @Create 2025/10/19 11:32
  */
 public interface GroupService extends IService<GroupDO> {
+
+    /**
+     * 新增短链接分组
+     *
+     * @param groupName 短链接分组名
+     */
+    void saveGroup(String groupName);
 }

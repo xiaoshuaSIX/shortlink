@@ -1,7 +1,6 @@
 package com.xiaoshuai66.shortlink.admin.common.config;
 
 import com.xiaoshuai66.shortlink.admin.common.biz.user.UserTransmitFilter;
-import jakarta.servlet.Filter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
